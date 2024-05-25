@@ -1,16 +1,16 @@
-# Using `Pairs` Instead of One-Hot Vectors in the Input Layer of Neural Networks.
+## Using `Pairs` Instead of One-Hot Vectors in the Input Layer of Neural Networks.
 The `Pairs` class, as implemented in the provided code, generates pairs of context and target words for the Skip-gram model in Word2Vec. This class encapsulates the context words (left and right) and the center (target) word, creating structured data pairs that represent the relationships between words based on their co-occurrence in a corpus.
-## Limitations of One-Hot Vectors
+### Limitations of One-Hot Vectors
 1. **High Dimensionality**: One-hot vectors grow in size with the vocabulary, resulting in very high-dimensional vectors.
 2. **Sparsity**: One-hot vectors contain mostly zeros, which can be inefficient in terms of computation and memory.
 3. **Lack of Semantic Information**: One-hot vectors do not capture semantic relationships between words, treating every word as equally distant from every other word.
-## Advantages of Using `Pairs`
+### Advantages of Using `Pairs`
 The `Pairs` class provides a more sophisticated way to represent word relationships that can serve as input to neural networks. Here’s how it can be advantageous:
 1. **Contextual Relationships**: `Pairs` explicitly captures the context around a target word, providing the network with information about word co-occurrences, which is crucial for understanding semantic relationships.
 2. **Reduced Dimensionality**: Instead of representing words as high-dimensional one-hot vectors, `Pairs` can use embeddings, which are dense, lower-dimensional vectors that capture semantic information.
 3. **Efficiency**: Using pairs directly can streamline the training process, as the model can learn from the structured word pairs without the need to convert them to one-hot vectors.
 4. **Improved Learning**: By feeding the network with word pairs that include context, the model can learn more efficiently about the relationships between words, leading to better performance on tasks like word prediction, classification, and translation.
-## Implementation
+### Implementation
 In practice, `Pairs` can be integrated into a neural network as follows:
 1. **Preprocess the Data**: Use `Pairs` to generate context-target word pairs from the corpus.
 2. **Embedding Layer**: Instead of one-hot encoding, map words to dense embeddings that capture their semantic properties.
@@ -52,7 +52,9 @@ while (pairs.go_to_next_word_pair() != cc_tokenizer::string_character_traits<cha
 }
 ```    
 In this example, **get_embedding** is a function that retrieves the embedding for a given word, and **train_network** is a function that trains the neural network using the center word embedding and the context word embeddings.
-## Conclusion
+### Conclusion
 Using the Pairs class directly as an input method for neural networks provides a more contextually rich and semantically meaningful way to train language models compared to traditional one-hot vectors. By leveraging the contextual information encapsulated in Pairs, neural networks can achieve better performance and efficiency in various natural language processing tasks.
-### License
+## How to Use the `Pairs` Class
+The `Pairs` class is designed to facilitate the generation of word pairs for training models in natural language processing tasks. To understand how to integrate the `Pairs` class into your project, the `usage` folder contains example code that demonstrates the use of the `Pairs` class.
+#### License
 This project is governed by a license, the details of which can be located in the accompanying file named 'LICENSE.' Please refer to this file for comprehensive information.

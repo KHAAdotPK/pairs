@@ -10,6 +10,7 @@
 #include "../../corpus/corpus.hh"
 
 #include "hyper-parameters.hh"
+// Grow a set of pairs and standup.
 #include "pairs.hh"
 
 #endif
