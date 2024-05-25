@@ -20,8 +20,8 @@
 #define GRAMMAR_END_OF_TOKEN_MARKER ' '
 #define GRAMMAR_END_OF_LINE_MARKER '\n'
 
-#include "../lib/argsv-cpp/lib/parser/parser.hh"
-#include "../lib/sundry/cooked_read_new.hh"
+#include "../../argsv-cpp/lib/parser/parser.hh"
+#include "../../sundry/cooked_read_new.hh"
 
 #include "../src/header.hh"
 

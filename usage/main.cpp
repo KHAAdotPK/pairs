@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
     // Create a vocabulary object from the parsed data.
     class Corpus vocab(data_parser);
     // Initialize the SkipGramPairs object with the vocabulary.
-    SKIPGRAMPAIRS pairs(vocab/*, arg_verbose.i ? true : false*/);
+    PAIRS pairs(vocab/*, arg_verbose.i ? true : false*/);
 
     // Iterate through all word pairs.
     while (pairs.go_to_next_word_pair() != cc_tokenizer::string_character_traits<char>::eof())

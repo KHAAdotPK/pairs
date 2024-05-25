@@ -10,7 +10,7 @@
 #include "../../corpus/corpus.hh"
 
 #include "hyper-parameters.hh"
-#include "skip-gram-pairs.hh"
+#include "pairs.hh"
 
 #endif
 
