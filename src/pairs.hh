@@ -165,6 +165,7 @@ typedef struct Pairs
     Pairs(CORPUS& vocab, bool verbose = false) : head(NULL), current_pair(NULL), n(0)
     {
         WORDPAIRS_PTR current_word_pair = NULL;
+        //cc_tokenizer::string_character_traits<char>::size_type i_centerWord;
 
         /*
             At each i + INDEX_ORIGINATES_AT_VALUE we've the center word
@@ -187,6 +188,8 @@ typedef struct Pairs
                     head->centerWord = vocab[vocab(i + INDEX_ORIGINATES_AT_VALUE, true)]; // i originated at 0, 
                                                                                           // vocabulary indices originate at INDEX_ORIGINATES_AT_VALUE
                                                                                           // We are traversing the vocabulary with redundency flag on. That is becuase of our choice for the outer for loop
+                    //i_centerWord = i;
+
                     // Later on find the surrounding context words
                     head->left = NULL;
                     head->right = NULL;
@@ -216,6 +219,7 @@ typedef struct Pairs
             {                
                 current_word_pair = head;
 
+                // We've new center word. Add its link at the end.
                 // Get to the tail of the linked list, we already know that head is not null
                 while (current_word_pair->next != NULL)
                 {
@@ -237,6 +241,8 @@ typedef struct Pairs
                     current_word_pair->centerWord = vocab[vocab(i + INDEX_ORIGINATES_AT_VALUE, true)]; // i originated at 0,
                                                                                                        // vocabulary indices originate at INDEX_ORIGINATES_AT_VALUE 
                                                                                                        // We traversing the vocabulary with redundency flag on. That is becuase of our choice for the outer for loop 
+                    //i_centerWord = i;
+
                     // Later on find the surrounding context words
                     current_word_pair->left = NULL;
                     current_word_pair->right = NULL;
@@ -265,7 +271,11 @@ typedef struct Pairs
             try
             {                            
                 left = reinterpret_cast<CONTEXTWORDS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(CONTEXTWORDS)));
-                memset(left->array, INDEX_NOT_FOUND_AT_VALUE, SKIP_GRAM_WINDOW_SIZE);
+                //memset(left->array, INDEX_NOT_FOUND_AT_VALUE, SKIP_GRAM_WINDOW_SIZE);
+                for (cc_tokenizer::string_character_traits<char>::size_type i = 0; i < SKIP_GRAM_WINDOW_SIZE; i++)
+                {
+                    left->array[i] = INDEX_NOT_FOUND_AT_VALUE;
+                }
             }
             catch (std::bad_alloc& e)
             {
@@ -289,12 +299,13 @@ typedef struct Pairs
 
                     if (verbose)
                     {
-                        std::cout<< vocab(((i + INDEX_ORIGINATES_AT_VALUE) - j), true).c_str() << "  ";
+                        //std::cout<< vocab(((i + INDEX_ORIGINATES_AT_VALUE) - j), true).c_str() << "  ";
+                        std::cout<< vocab(left->array[j - 1], false).c_str() << "  ";
                     }
                 }
                 else
                 {
-                    left->array[j - 1] =  INDEX_NOT_FOUND_AT_VALUE;
+                    left->array[j - 1] = INDEX_NOT_FOUND_AT_VALUE;
 
                     if (verbose)
                     {
@@ -310,14 +321,19 @@ typedef struct Pairs
             if (verbose)
             {
                 // The center word
-                std::cout<< "[ " << vocab(i + INDEX_ORIGINATES_AT_VALUE, true).c_str() << " ] ";
+                //std::cout<< "[ " << vocab(i + INDEX_ORIGINATES_AT_VALUE, true).c_str() << " ] ";
+                std::cout<< "[ " << vocab(current_word_pair->centerWord, false).c_str() << " ] ";
             }
 
             CONTEXTWORDS_PTR right = NULL;
             try
             {
                 right = reinterpret_cast<CONTEXTWORDS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(CONTEXTWORDS)));
-                memset(right->array, INDEX_NOT_FOUND_AT_VALUE, SKIP_GRAM_WINDOW_SIZE);
+                //memset(right->array, INDEX_NOT_FOUND_AT_VALUE, SKIP_GRAM_WINDOW_SIZE);
+                for (cc_tokenizer::string_character_traits<char>::size_type i = 0; i < SKIP_GRAM_WINDOW_SIZE; i++)
+                {
+                    right->array[i] = INDEX_NOT_FOUND_AT_VALUE;
+                }
             }
             catch(std::bad_alloc& e)
             {
@@ -335,21 +351,36 @@ typedef struct Pairs
             // Context words to the right of center word only when there are atleast one context word to the right
             // We need to stop this loop at the last word as target/center word and not look for context words on the right
             for (cc_tokenizer::string_character_traits<char>::size_type j = 1; j <= SKIP_GRAM_WINDOW_SIZE && (i + INDEX_ORIGINATES_AT_VALUE + j) /* Not go beyond the last (center/target) word */ <= vocab.numberOfTokens(); j++)
+            //for (cc_tokenizer::string_character_traits<char>::size_type j = i_centerWord + 1; ((j < vocab.numberOfTokens()) && (j < (i_centerWord + SKIP_GRAM_WINDOW_SIZE))); j++)
             {                
                 if (vocab(((i + INDEX_ORIGINATES_AT_VALUE) + j), true).size())
+                //if (vocab(INDEX_ORIGINATES_AT_VALUE + j, true).size())
                 {
-                    if (verbose)
+                    /*if (verbose)
                     {
                         std::cout<< vocab(((i + INDEX_ORIGINATES_AT_VALUE) + j), true).c_str() << "  ";
 
                         //std::cout<< "-------->>>>>>>> "  << vocab[vocab((i + INDEX_ORIGINATES_AT_VALUE) + j, true)] << std::endl;
-                    }
+                    }*/
 
                     right->array[j - 1] = vocab[vocab(((i + INDEX_ORIGINATES_AT_VALUE) + j), true)];
+                    //right->array[j - (i_centerWord + 1)] = vocab[vocab(INDEX_ORIGINATES_AT_VALUE + j, true)];
+
+                    if (verbose)
+                    {
+                        std::cout<< vocab(right->array[j - 1], false).c_str() << "  ";
+
+                        //std::cout<< "-------->>>>>>>> "  << vocab[vocab((i + INDEX_ORIGINATES_AT_VALUE) + j, true)] << std::endl;
+                    }
+
+                    /*if (current_word_pair->centerWord == vocab[vocab(((i + INDEX_ORIGINATES_AT_VALUE) + j), true)])
+                    {
+                        std::cout<< "YES YES" << std::endl;
+                    }*/
                 }
                 else
                 {
-                    right->array[j - i] = INDEX_NOT_FOUND_AT_VALUE;
+                    right->array[j - /*(i_centerWord + 1)*/ /*i*/ 1] = INDEX_NOT_FOUND_AT_VALUE;
 
                     if (verbose)
                     {
@@ -357,6 +388,8 @@ typedef struct Pairs
                     }
                 }
             }
+
+
 
             current_word_pair->right = right;
 
@@ -452,6 +485,7 @@ typedef struct Pairs
                 return current;
             }
 
+            j = j + 1;
             current = current->next;
         } while (current != NULL);
         
