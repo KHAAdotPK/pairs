@@ -47,7 +47,7 @@ typedef struct ContextWord
 {   
     cc_tokenizer::string_character_traits<char>::size_type operator[](cc_tokenizer::string_character_traits<char>::size_type index) const
     {
-        if (index >= SKIP_GRAM_WINDOW_SIZE)
+        if (index >= SKIP_GRAM_CONTEXT_WINDOW_SIZE)
         {            
             return INDEX_NOT_FOUND_AT_VALUE;
         }
@@ -55,7 +55,7 @@ typedef struct ContextWord
         return array[index];   
     }
 
-    cc_tokenizer::string_character_traits<char>::size_type array[SKIP_GRAM_WINDOW_SIZE];
+    cc_tokenizer::string_character_traits<char>::size_type array[SKIP_GRAM_CONTEXT_WINDOW_SIZE];
 
 } CONTEXTWORDS;
 
@@ -90,12 +90,12 @@ typedef struct WordPairs
      */
     cc_tokenizer::string_character_traits<char>::size_type getLeft(cc_tokenizer::string_character_traits<char>::size_type index)
     {
-        if (index >= SKIP_GRAM_WINDOW_SIZE)
+        if (index >= SKIP_GRAM_CONTEXT_WINDOW_SIZE)
         {
             return INDEX_NOT_FOUND_AT_VALUE;
         }
 
-        // The furthest context word from the center/target word is at index ((SKIP_GRAM_WINDOW_SIZE - 1) - index)
+        // The furthest context word from the center/target word is at index ((SKIP_GRAM_CONTEXT_WINDOW_SIZE - 1) - index)
         return left->array[index];
     }
 
@@ -115,12 +115,12 @@ typedef struct WordPairs
             return INDEX_NOT_FOUND_AT_VALUE;
         }*/
 
-        if (index >= SKIP_GRAM_WINDOW_SIZE)
+        if (index >= SKIP_GRAM_CONTEXT_WINDOW_SIZE)
         {
             return INDEX_NOT_FOUND_AT_VALUE;
         }
 
-        // The furthest context word from the center/target word is at index (SKIP_GRAM_WINDOW_SIZE - 1)
+        // The furthest context word from the center/target word is at index (SKIP_GRAM_CONTEXT_WINDOW_SIZE - 1)
         return right->array[index];
     }
 
@@ -147,7 +147,7 @@ typedef struct WordPairs
 typedef WORDPAIRS* WORDPAIRS_PTR;
 /*
     In the context of word embedding models like Skip-gram,
-    word pairs refer to a central word and the surrounding words within a specific window size (SKIP_GRAM_WINDOWS_SIZE).
+    word pairs refer to a central word and the surrounding words within a specific window size (SKIP_GRAM_CONTEXT_WINDOWS_SIZE).
 
     Skip-gram aims to predict the surrounding words based on the central word. 
     There are two main types of word pairs to consider in Skip-gram:
@@ -170,7 +170,7 @@ typedef struct Pairs
         /*
             At each i + INDEX_ORIGINATES_AT_VALUE we've the center word
             Context words are pair of words around this center word...
-            SKIP_GRAM_WINDOW_SIZE center-word SKIP_GRAM_WINDOW_SIZE
+            SKIP_GRAM_CONTEXT_WINDOW_SIZE center-word SKIP_GRAM_CONTEXT_WINDOW_SIZE
             
             We must monitor redundancy as we construct the entire vocabulary from the corpus.
             It's crucial to maintain records of any redundant words, that is why the use of numberOfTokens() method instead of numberOfUniqueTokens()
@@ -266,13 +266,13 @@ typedef struct Pairs
             // Find context words around the center word 
             // Pointer "current_word_pair" is a displacement in to our linked list and it points to the word pair which will hold the center word and the all its context words
 
-            // context words on left, number of these at max would be SKIP_GRAM_WINDOW_SIZE
+            // context words on left, number of these at max would be SKIP_GRAM_CONTEXT_WINDOW_SIZE
             CONTEXTWORDS_PTR left = NULL;
             try
             {                            
                 left = reinterpret_cast<CONTEXTWORDS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(CONTEXTWORDS)));
-                //memset(left->array, INDEX_NOT_FOUND_AT_VALUE, SKIP_GRAM_WINDOW_SIZE);
-                for (cc_tokenizer::string_character_traits<char>::size_type i = 0; i < SKIP_GRAM_WINDOW_SIZE; i++)
+                //memset(left->array, INDEX_NOT_FOUND_AT_VALUE, SKIP_GRAM_CONTEXT_WINDOW_SIZE);
+                for (cc_tokenizer::string_character_traits<char>::size_type i = 0; i < SKIP_GRAM_CONTEXT_WINDOW_SIZE; i++)
                 {
                     left->array[i] = INDEX_NOT_FOUND_AT_VALUE;
                 }
@@ -291,7 +291,7 @@ typedef struct Pairs
             }
 
             // Context words on the left of center word. Start on the left most and then move closer to the target/center word
-            for (cc_tokenizer::string_character_traits<char>::size_type j = SKIP_GRAM_WINDOW_SIZE; j > 0; /*SKIP_GRAM_WINDOW_SIZE;*/ j--)
+            for (cc_tokenizer::string_character_traits<char>::size_type j = SKIP_GRAM_CONTEXT_WINDOW_SIZE; j > 0; /*SKIP_GRAM_CONTEXT_WINDOW_SIZE;*/ j--)
             {            
                 if (vocab(((i + INDEX_ORIGINATES_AT_VALUE) - j), true).size())
                 {
@@ -329,8 +329,8 @@ typedef struct Pairs
             try
             {
                 right = reinterpret_cast<CONTEXTWORDS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(CONTEXTWORDS)));
-                //memset(right->array, INDEX_NOT_FOUND_AT_VALUE, SKIP_GRAM_WINDOW_SIZE);
-                for (cc_tokenizer::string_character_traits<char>::size_type i = 0; i < SKIP_GRAM_WINDOW_SIZE; i++)
+                //memset(right->array, INDEX_NOT_FOUND_AT_VALUE, SKIP_GRAM_CONTEXT_WINDOW_SIZE);
+                for (cc_tokenizer::string_character_traits<char>::size_type i = 0; i < SKIP_GRAM_CONTEXT_WINDOW_SIZE; i++)
                 {
                     right->array[i] = INDEX_NOT_FOUND_AT_VALUE;
                 }
@@ -350,8 +350,8 @@ typedef struct Pairs
 
             // Context words to the right of center word only when there are atleast one context word to the right
             // We need to stop this loop at the last word as target/center word and not look for context words on the right
-            for (cc_tokenizer::string_character_traits<char>::size_type j = 1; j <= SKIP_GRAM_WINDOW_SIZE && (i + INDEX_ORIGINATES_AT_VALUE + j) /* Not go beyond the last (center/target) word */ <= vocab.numberOfTokens(); j++)
-            //for (cc_tokenizer::string_character_traits<char>::size_type j = i_centerWord + 1; ((j < vocab.numberOfTokens()) && (j < (i_centerWord + SKIP_GRAM_WINDOW_SIZE))); j++)
+            for (cc_tokenizer::string_character_traits<char>::size_type j = 1; j <= SKIP_GRAM_CONTEXT_WINDOW_SIZE && (i + INDEX_ORIGINATES_AT_VALUE + j) /* Not go beyond the last (center/target) word */ <= vocab.numberOfTokens(); j++)
+            //for (cc_tokenizer::string_character_traits<char>::size_type j = i_centerWord + 1; ((j < vocab.numberOfTokens()) && (j < (i_centerWord + SKIP_GRAM_CONTEXT_WINDOW_SIZE))); j++)
             {                
                 if (vocab(((i + INDEX_ORIGINATES_AT_VALUE) + j), true).size())
                 //if (vocab(INDEX_ORIGINATES_AT_VALUE + j, true).size())
