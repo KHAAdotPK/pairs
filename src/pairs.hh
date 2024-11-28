@@ -387,11 +387,25 @@ typedef struct Pairs
                         std::cout<< "NONE" << "  ";
                     }
                 }
+
+                /*if (right->array[j - 1] == INDEX_NOT_FOUND_AT_VALUE)
+                {
+                    std::cout<< "NONE" << " ";
+                }*/
             }
 
-
-
             current_word_pair->right = right;
+
+            /*
+                TODO, rewrite all of the code of this constructors, in the code wold after thoughts are dangerous.
+             */
+            for (cc_tokenizer::string_character_traits<char>::size_type k = 0; k < SKIP_GRAM_CONTEXT_WINDOW_SIZE; k++)
+            {
+                if (right->array[k] == INDEX_NOT_FOUND_AT_VALUE)
+                {
+                    std::cout<< "NONE" << " ";
+                }
+            }
 
             right = NULL;
 
