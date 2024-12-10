@@ -399,19 +399,24 @@ typedef struct Pairs
             /*
                 TODO, rewrite all of the code of this constructors, in the code wold after thoughts are dangerous.
              */
-            for (cc_tokenizer::string_character_traits<char>::size_type k = 0; k < SKIP_GRAM_CONTEXT_WINDOW_SIZE; k++)
+            if (verbose)
             {
-                if (right->array[k] == INDEX_NOT_FOUND_AT_VALUE)
+                for (cc_tokenizer::string_character_traits<char>::size_type k = 0; k < SKIP_GRAM_CONTEXT_WINDOW_SIZE; k++)
                 {
-                    std::cout<< "NONE" << " ";
+                    if (right->array[k] == INDEX_NOT_FOUND_AT_VALUE)
+                    {
+                        std::cout<< "NONE" << " ";
+                    }
                 }
+
+                std::cout<< std::endl;  
             }
 
             right = NULL;
 
             if (verbose)
             {
-                std::cout<< std::endl;            
+                //std::cout<< std::endl;            
             }
         }        
     }
