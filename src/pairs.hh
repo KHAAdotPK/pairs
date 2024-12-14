@@ -55,8 +55,14 @@ typedef struct ContextWord
         return array[index];   
     }
 
-    cc_tokenizer::string_character_traits<char>::size_type array[SKIP_GRAM_CONTEXT_WINDOW_SIZE];
+    cc_tokenizer::string_character_traits<char>::size_type size(void) 
+    {
+        return n;
+    }
 
+    // TODO, make all properties private
+    cc_tokenizer::string_character_traits<char>::size_type n;
+    cc_tokenizer::string_character_traits<char>::size_type array[SKIP_GRAM_CONTEXT_WINDOW_SIZE];    
 } CONTEXTWORDS;
 
 typedef CONTEXTWORDS* CONTEXTWORDS_PTR;
@@ -96,7 +102,8 @@ typedef struct WordPairs
         }
 
         // The furthest context word from the center/target word is at index ((SKIP_GRAM_CONTEXT_WINDOW_SIZE - 1) - index)
-        return left->array[index];
+        //return left->array[index];
+        return (*left)[index];
     }
 
     CONTEXTWORDS_PTR getLeft(void) 
@@ -121,7 +128,8 @@ typedef struct WordPairs
         }
 
         // The furthest context word from the center/target word is at index (SKIP_GRAM_CONTEXT_WINDOW_SIZE - 1)
-        return right->array[index];
+        //return right->array[index];
+        return (*right)[index];
     }
 
     CONTEXTWORDS_PTR getRight(void) 
@@ -271,10 +279,11 @@ typedef struct Pairs
             try
             {                            
                 left = reinterpret_cast<CONTEXTWORDS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(CONTEXTWORDS)));
+                left->n = 0;
                 //memset(left->array, INDEX_NOT_FOUND_AT_VALUE, SKIP_GRAM_CONTEXT_WINDOW_SIZE);
                 for (cc_tokenizer::string_character_traits<char>::size_type i = 0; i < SKIP_GRAM_CONTEXT_WINDOW_SIZE; i++)
                 {
-                    left->array[i] = INDEX_NOT_FOUND_AT_VALUE;
+                    left->array[i] = INDEX_NOT_FOUND_AT_VALUE;                    
                 }
             }
             catch (std::bad_alloc& e)
@@ -296,6 +305,7 @@ typedef struct Pairs
                 if (vocab(((i + INDEX_ORIGINATES_AT_VALUE) - j), true).size())
                 {
                     left->array[j - 1] = vocab[vocab(((i + INDEX_ORIGINATES_AT_VALUE) - j), true)];
+                    left->n = left->n + 1;
 
                     if (verbose)
                     {
@@ -329,6 +339,7 @@ typedef struct Pairs
             try
             {
                 right = reinterpret_cast<CONTEXTWORDS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(CONTEXTWORDS)));
+                right->n = 0;
                 //memset(right->array, INDEX_NOT_FOUND_AT_VALUE, SKIP_GRAM_CONTEXT_WINDOW_SIZE);
                 for (cc_tokenizer::string_character_traits<char>::size_type i = 0; i < SKIP_GRAM_CONTEXT_WINDOW_SIZE; i++)
                 {
@@ -365,6 +376,7 @@ typedef struct Pairs
 
                     right->array[j - 1] = vocab[vocab(((i + INDEX_ORIGINATES_AT_VALUE) + j), true)];
                     //right->array[j - (i_centerWord + 1)] = vocab[vocab(INDEX_ORIGINATES_AT_VALUE + j, true)];
+                    right->n = right->n + 1;
 
                     if (verbose)
                     {
