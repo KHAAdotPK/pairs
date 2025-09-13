@@ -3,8 +3,8 @@
     Q@khaa.pk
  */
 
-#ifndef SKIP_GRAM_HYPER_PARAMETERS_HEADER_HH
-#define SKIP_GRAM_HYPER_PARAMETERS_HEADER_HH
+#ifndef SKIP_GRAM_HYPER_PARAMETERS_PAIRS_HEADER_HH
+#define SKIP_GRAM_HYPER_PARAMETERS_PAIRS_HEADER_HH
 
 /*
    Size of window of context words around a target/center word, and use the context words to predict the target word(in CBOW/Skip-Gram model) 
