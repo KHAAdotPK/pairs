@@ -3,6 +3,8 @@
     Q@khaa.pk
  */
 
+#include "header.hh" 
+
 /*
     TODO: Address handling for the last token/word of the corpus when it serves as the center/target word in a pair. 
     Given that there are no words/tokens to its right, the 'right' array contains values other than INDEX_NOT_FOUND_AT_VALUE. 
@@ -38,8 +40,6 @@
 
 #ifndef R3PLICA_WILD_FLOWERS_AND_WILD_HORSES_GROW_PAIRS_HH
 #define R3PLICA_WILD_FLOWERS_AND_WILD_HORSES_GROW_PAIRS_HH
-
-#include "header.hh"
 
 struct Pairs;
 
@@ -170,7 +170,7 @@ typedef WORDPAIRS* WORDPAIRS_PTR;
  */
 typedef struct Pairs 
 {    
-    Pairs(CORPUS& vocab, bool verbose = false) : head(NULL), current_pair(NULL), n(0)
+    Pairs(CORPUS& vocab, bool verbose = false) : head(NULL), current_pair(NULL), n(0), the_80_20_split_counter(0)
     {
         WORDPAIRS_PTR current_word_pair = NULL;
         //cc_tokenizer::string_character_traits<char>::size_type i_centerWord;
@@ -463,19 +463,58 @@ typedef struct Pairs
     }
 
     /*
-        PLEASE NOTE: current_pair gets NULL value at the end of loop on its own. 
+        PLEASE NOTE: current_pair gets NULL value at the end of loop on its own.
+        @param training_or_validation: Type bool, false for training and true for validation
      */
-    cc_tokenizer::string_character_traits<char>::int_type go_to_next_word_pair(void) 
+    cc_tokenizer::string_character_traits<char>::int_type go_to_next_word_pair(bool phase = PAIRS_TRAIN) 
     {
         if (current_pair == NULL)
         {
             current_pair = head;
+        
+            if (phase == PAIRS_VALIDATE)
+            {
+                cc_tokenizer::string_character_traits<char>::size_type number_of_pairs_for_training = this->get_number_of_word_pairs()*0.80;
+
+                while (number_of_pairs_for_training > 0 && current_pair != NULL)
+                {
+                    current_pair = current_pair->next;
+                    number_of_pairs_for_training = number_of_pairs_for_training - 1;
+                }
+            }
+            else 
+            {
+                this->the_80_20_split_counter = 1;
+            }
+
+            if (current_pair == NULL)
+            { 
+                this->the_80_20_split_counter = 0;             
+                return cc_tokenizer::string_character_traits<char>::eof();
+            }
         }
         else 
         {
-            current_pair = current_pair->next;
-        }
+            if (phase == PAIRS_TRAIN)
+            {
+                this->the_80_20_split_counter = this->the_80_20_split_counter + 1;
 
+                if (this->the_80_20_split_counter < this->get_number_of_word_pairs()*0.80)
+                {
+                    current_pair = current_pair->next;    
+                }
+                else 
+                {
+                    this->the_80_20_split_counter = 0;
+                    current_pair = NULL;
+                }
+            }
+            else 
+            {
+                current_pair = current_pair->next;
+            }  
+        }
+                
         if (current_pair == NULL)
         {
             return cc_tokenizer::string_character_traits<char>::eof();
@@ -612,6 +651,7 @@ typedef struct Pairs
         WORDPAIRS_PTR current_pair;
 
         cc_tokenizer::string_character_traits<char>::size_type n;
+        cc_tokenizer::string_character_traits<char>::size_type the_80_20_split_counter;
 
 } PAIRS;
 
