@@ -8,6 +8,8 @@
 
 #define PAIRS_TRAIN true
 #define PAIRS_VALIDATE false 
+#define PAIRS_VOCABULARY_TRAINING_SPLIT 0.80
+#define PAIRS_VOCABULARY_VALIDATION_SPLIT 0.20 
 
 #include "../../Numcy/header.hh"
 #include "../../corpus/corpus.hh"
