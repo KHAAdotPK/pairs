@@ -462,19 +462,41 @@ typedef struct Pairs
         cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair));        
     }
 
-    /*
-        PLEASE NOTE: current_pair gets NULL value at the end of loop on its own.
-        @param training_or_validation: Type bool, false for training and true for validation
+     /*
+        PLEASE NOTE: current_pair gets NULL value at the end of loop on its own. 
      */
-    cc_tokenizer::string_character_traits<char>::int_type go_to_next_word_pair(bool phase = PAIRS_TRAIN) 
+    cc_tokenizer::string_character_traits<char>::int_type go_to_next_word_pair(void) 
     {
         if (current_pair == NULL)
         {
             current_pair = head;
+        }
+        else 
+        {
+            current_pair = current_pair->next;
+        }
+
+        if (current_pair == NULL)
+        {
+            return cc_tokenizer::string_character_traits<char>::eof();
+        }
+
+        return ~cc_tokenizer::string_character_traits<char>::eof();
+    }
+   
+    /*
+        PLEASE NOTE: current_pair gets NULL value at the end of loop on its own.
+        the_80_20_split_counter, originates at 0
+     */
+    cc_tokenizer::string_character_traits<char>::int_type go_to_next_word_pair(bool phase) 
+    {
+        if (current_pair == NULL) // It does not matter which phase it is, all phases initialized in the same way 
+        {
+            current_pair = head;
         
-            if (phase == PAIRS_VALIDATE)
+            if (phase == PAIRS_VALIDATION_PHASE)
             {
-                cc_tokenizer::string_character_traits<char>::size_type number_of_pairs_for_training = this->get_number_of_word_pairs()*0.80;
+                cc_tokenizer::string_character_traits<char>::size_type number_of_pairs_for_training = /*(this->get_number_of_word_pairs()*PAIRS_VOCABULARY_TRAINING_SPLIT)*/ PAIRS_VOCABULARY_TRAINING_SPLIT(this->get_number_of_word_pairs());
 
                 while (number_of_pairs_for_training > 0 && current_pair != NULL)
                 {
@@ -482,44 +504,35 @@ typedef struct Pairs
                     number_of_pairs_for_training = number_of_pairs_for_training - 1;
                 }
             }
-            else 
-            {
-                this->the_80_20_split_counter = 1;
-            }
-
-            if (current_pair == NULL)
-            { 
-                this->the_80_20_split_counter = 0;             
-                return cc_tokenizer::string_character_traits<char>::eof();
-            }
         }
         else 
         {
-            if (phase == PAIRS_TRAIN)
+            if (phase == PAIRS_TRAINING_PHASE)
             {
                 this->the_80_20_split_counter = this->the_80_20_split_counter + 1;
 
-                if (this->the_80_20_split_counter < this->get_number_of_word_pairs()*0.80)
+                if (this->the_80_20_split_counter < /*(this->get_number_of_word_pairs()*PAIRS_VOCABULARY_TRAINING_SPLIT)*/ PAIRS_VOCABULARY_TRAINING_SPLIT(this->get_number_of_word_pairs()))
                 {
                     current_pair = current_pair->next;    
                 }
-                else 
-                {
-                    this->the_80_20_split_counter = 0;
+                else // Crossed the last node of training pairs
+                {                    
                     current_pair = NULL;
                 }
             }
-            else 
+            else // phase is for validation
             {
-                current_pair = current_pair->next;
+                current_pair = current_pair->next; // just set to next link, the last link will set the curent_pair to NULL
             }  
         }
                 
         if (current_pair == NULL)
         {
+            this->the_80_20_split_counter = 0; // It does not matter whcvh phase it is, it is safe to reset this counter anyways as it originates at this value
             return cc_tokenizer::string_character_traits<char>::eof();
         }
 
+        // Sucess, pointer to nth pair is stored in the current_pair, access it usng the get_current_word_pair() method
         return ~cc_tokenizer::string_character_traits<char>::eof();
     }
 
@@ -651,7 +664,7 @@ typedef struct Pairs
         WORDPAIRS_PTR current_pair;
 
         cc_tokenizer::string_character_traits<char>::size_type n;
-        cc_tokenizer::string_character_traits<char>::size_type the_80_20_split_counter;
+        cc_tokenizer::string_character_traits<char>::size_type the_80_20_split_counter; // Originates at 0
 
 } PAIRS;
 
