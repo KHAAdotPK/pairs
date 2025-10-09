@@ -510,7 +510,7 @@ typedef struct Pairs
             if (phase == PAIRS_TRAINING_PHASE)
             {
                 this->the_80_20_split_counter = this->the_80_20_split_counter + 1;
-
+                
                 if (this->the_80_20_split_counter < /*(this->get_number_of_word_pairs()*PAIRS_VOCABULARY_TRAINING_SPLIT)*/ PAIRS_VOCABULARY_TRAINING_SPLIT(this->get_number_of_word_pairs()))
                 {
                     current_pair = current_pair->next;    

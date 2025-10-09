@@ -8,8 +8,11 @@
 
 #define PAIRS_TRAINING_PHASE true
 #define PAIRS_VALIDATION_PHASE false 
-#define PAIRS_VOCABULARY_TRAINING_SPLIT(c) ((c*80)/100)
-#define PAIRS_VOCABULARY_VALIDATION_SPLIT(c) ((c*20)/100) 
+#define PAIRS_VOCABULARY_TRAINING_SPLIT(c) ((cc_tokenizer::string_character_traits<char>::size_type)((c)*0.80))
+#define PAIRS_VOCABULARY_VALIDATION_SPLIT(c) ((cc_tokenizer::string_character_traits<char>::size_type)((c)*0.20))
+
+#define PAIRS_VOCABULARY_TRAINING_SPLIT_OLD(c) ((((c)/100.0))*80)
+#define PAIRS_VOCABULARY_VALIDATION_SPLIT_OLD(c) (((c)/100)*20) 
 
 #include "../../Numcy/header.hh"
 #include "../../corpus/corpus.hh"
