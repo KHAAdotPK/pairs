@@ -169,8 +169,13 @@ typedef WORDPAIRS* WORDPAIRS_PTR;
     Skip-gram learns the underlying relationships between words and builds a meaningful vector representation for each word.      
  */
 typedef struct Pairs 
-{    
-    Pairs(CORPUS& vocab, bool verbose = false) : head(NULL), current_pair(NULL), n(0), the_80_20_split_counter(0)
+{   
+    Pairs() : head(NULL), current_pair(NULL), n(0), the_80_20_split_counter(0), reference_count(NUMCY_DEFAULT_REFERENCE_COUNT)
+    {
+
+    }
+
+    Pairs(CORPUS& vocab, bool verbose = false) : head(NULL), current_pair(NULL), n(0), the_80_20_split_counter(0), reference_count(NUMCY_DEFAULT_REFERENCE_COUNT)
     {
         WORDPAIRS_PTR current_word_pair = NULL;
         //cc_tokenizer::string_character_traits<char>::size_type i_centerWord;
@@ -435,7 +440,10 @@ typedef struct Pairs
 
     ~Pairs()
     {
-        if (head == NULL)
+
+        this->decrementReferenceCount();
+
+        /*if (head == NULL)
         {
             return;
         }
@@ -459,7 +467,75 @@ typedef struct Pairs
 
         cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair->left));
         cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair->right));
-        cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair));        
+        cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair));*/        
+    }
+
+    void incrementReferenceCount(void) 
+    {            
+        if (this->head != NULL)
+        {            
+            this->reference_count++;
+        }
+    }
+
+    void decrementReferenceCount(void)
+    {
+        if (this->head == NULL) 
+        {
+            return;
+        }
+
+        if (this->reference_count > 0)
+        {
+            this->reference_count--;
+        }
+
+        if (this->reference_count > 0)
+        {
+            return;
+        }
+
+        WORDPAIRS_PTR current_wordpair = head;
+
+        while (current_wordpair->next != NULL)
+        {
+            current_wordpair = current_wordpair->next;
+        }
+
+        while (current_wordpair->prev != NULL)
+        {
+            current_wordpair = current_wordpair->prev;
+
+            cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair->next->left));
+            cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair->next->right));
+
+            cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair->next));
+        }
+
+        cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair->left));
+        cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair->right));
+        cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair));    
+    }
+
+    Pairs& operator= (Pairs& other)
+    {
+        // Self assinment check
+        if (this == &other)
+        {
+            return *this;
+        }
+
+        this->decrementReferenceCount();
+
+        this->head = other.head;
+        this->current_pair = NULL;
+        this->n = other.n;
+        this->the_80_20_split_counter = other.the_80_20_split_counter;
+        this->reference_count = other.reference_count;
+
+        this->incrementReferenceCount();
+
+        return *this;
     }
 
      /*
@@ -665,6 +741,8 @@ typedef struct Pairs
 
         cc_tokenizer::string_character_traits<char>::size_type n;
         cc_tokenizer::string_character_traits<char>::size_type the_80_20_split_counter; // Originates at 0
+
+        cc_tokenizer::string_character_traits<char>::size_type reference_count;
 
 } PAIRS;
 
