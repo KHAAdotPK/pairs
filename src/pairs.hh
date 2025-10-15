@@ -78,7 +78,7 @@ typedef struct WordPairs
         prev = NULL;
     } 
 
-    WordPairs& operator=(const WordPairs& other)
+    WordPairs& operator= (const WordPairs& other)
     {
         if (this != &other) // Check for self-assignment
         { 
@@ -439,11 +439,13 @@ typedef struct Pairs
     }
 
     ~Pairs()
-    {
+    {                
+        if (this->reference_count > 0)
+        {
+            return;
+        }
 
-        this->decrementReferenceCount();
-
-        /*if (head == NULL)
+        if (head == NULL)
         {
             return;
         }
@@ -467,7 +469,13 @@ typedef struct Pairs
 
         cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair->left));
         cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair->right));
-        cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair));*/        
+        cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair));
+        
+        this->head = NULL;
+        this->n = 0;
+        this->current_pair = NULL;
+        this->reference_count = 0;
+        this->the_80_20_split_counter = 0;
     }
 
     void incrementReferenceCount(void) 
@@ -479,23 +487,18 @@ typedef struct Pairs
     }
 
     void decrementReferenceCount(void)
-    {
-        if (this->head == NULL) 
-        {
-            return;
-        }
-
+    {        
         if (this->reference_count > 0)
         {
             this->reference_count--;
         }
 
-        if (this->reference_count > 0)
+        /*if (this->reference_count > 0)
         {
             return;
-        }
+        }*/
 
-        WORDPAIRS_PTR current_wordpair = head;
+        /*WORDPAIRS_PTR current_wordpair = head;
 
         while (current_wordpair->next != NULL)
         {
@@ -514,7 +517,7 @@ typedef struct Pairs
 
         cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair->left));
         cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair->right));
-        cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair));    
+        cc_tokenizer::allocator<char>().deallocate(reinterpret_cast<char*>(current_wordpair));*/    
     }
 
     Pairs& operator= (Pairs& other)
@@ -678,7 +681,7 @@ typedef struct Pairs
             }
 
             if (pair_a != NULL && pair_b != NULL)
-            {
+            {                
                 WORDPAIRS pair(*pair_a);
                 *pair_a = *pair_b;
                 *pair_b = pair;
@@ -692,8 +695,7 @@ typedef struct Pairs
 
             i = i + 1;
         }
-        
-        
+                        
         /*
         if (head == NULL)
         {
