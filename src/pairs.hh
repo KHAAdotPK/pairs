@@ -179,7 +179,7 @@ typedef struct Pairs
     {
         WORDPAIRS_PTR current_word_pair = NULL;
         //cc_tokenizer::string_character_traits<char>::size_type i_centerWord;
-
+        
         /*
             At each i + INDEX_ORIGINATES_AT_VALUE we've the center word
             Context words are pair of words around this center word...
@@ -189,7 +189,7 @@ typedef struct Pairs
             It's crucial to maintain records of any redundant words, that is why the use of numberOfTokens() method instead of numberOfUniqueTokens()
          */
         for (cc_tokenizer::string_character_traits<char>::size_type i = 0; i < vocab.numberOfTokens(); i++)
-        {
+        {               
             if (head == NULL)
             {   
                 try            
@@ -213,6 +213,8 @@ typedef struct Pairs
                      */
                     current_word_pair = head;
 
+                    tail = current_word_pair;
+
                     n = n + 1; // Increment number of word pair counter
                 }
                 catch (std::bad_alloc& e)
@@ -230,14 +232,16 @@ typedef struct Pairs
             }
             else
             {                
-                current_word_pair = head;
+                //current_word_pair = head;
+
+                current_word_pair = tail;
 
                 // We've new center word. Add its link at the end.
                 // Get to the tail of the linked list, we already know that head is not null
-                while (current_word_pair->next != NULL)
-                {
-                    current_word_pair = current_word_pair->next;
-                }
+                //while (current_word_pair->next != NULL)
+                //{
+                //    current_word_pair = current_word_pair->next;
+                //}
                 
                 try
                 {
@@ -259,6 +263,8 @@ typedef struct Pairs
                     // Later on find the surrounding context words
                     current_word_pair->left = NULL;
                     current_word_pair->right = NULL;
+
+                    tail = current_word_pair;
 
                     n = n + 1; // Increment number of word pair counter
                 }
@@ -434,7 +440,7 @@ typedef struct Pairs
             if (verbose)
             {
                 //std::cout<< std::endl;            
-            }
+            }        
         }        
     }
 
@@ -476,6 +482,252 @@ typedef struct Pairs
         this->current_pair = NULL;
         this->reference_count = 0;
         this->the_80_20_split_counter = 0;
+    }
+    
+    /**
+     * @brief Serializes the entire linked list of word-context pairs to a binary file on disk.
+     *
+     * This function writes the pre-computed training pairs (left context array, center word index,
+     * and right context array) for every center word occurrence in the corpus to a binary file.
+     * The data is written in a fixed-size format assuming a constant context window size
+     * (SKIP_GRAM_CONTEXT_WINDOW_SIZE on each side).
+     *
+     * The format per pair is:
+     *   - SKIP_GRAM_CONTEXT_WINDOW_SIZE × size_type : left context indices
+     *   - 1 × size_type                             : center word index (unique vocabulary index)
+     *   - SKIP_GRAM_CONTEXT_WINDOW_SIZE × size_type : right context indices
+     *
+     * This allows fast subsequent training runs by avoiding expensive pair reconstruction
+     * from the corpus and redundant vocabulary lookups.
+     *
+     * @param fname The filename (as a custom String<char>) to write the binary data to.
+     *
+     * @throws ala_exception If the file cannot be opened, or if any write operation fails
+     *                       (incomplete write of an array or center word).
+     *
+     * @note The file is opened in "wb" mode (binary write). The caller is responsible for
+     *       ensuring the Pairs object is fully constructed before calling this method.
+     */
+    void write (cc_tokenizer::String<char>& fname) throw (ala_exception)
+    {
+        FILE* fp = fopen(fname.c_str(), "wb");
+        size_t written_count = 0;
+        
+        if (fp == NULL)
+        {
+            cc_tokenizer::String<char> message1 = cc_tokenizer::String<char>("Pairs::write(cc_tokenizer::String<char>&) Error: Could not open file \"");
+            cc_tokenizer::String<char> message2 = cc_tokenizer::String<char>("\" for writing.");
+
+            throw ala_exception(message1 + fname + message2);
+        }
+
+        WORDPAIRS_PTR current_pair = head;
+
+        while (current_pair != NULL)
+        {
+            written_count = fwrite(current_pair->left->array, sizeof(cc_tokenizer::string_character_traits<char>::size_type), SKIP_GRAM_CONTEXT_WINDOW_SIZE, fp);
+            if (written_count != SKIP_GRAM_CONTEXT_WINDOW_SIZE/**sizeof(cc_tokenizer::string_character_traits<char>::size_type)*/)
+            {
+                cc_tokenizer::String<char> message1 = cc_tokenizer::String<char>("Pairs::write(cc_tokenizer::String<char>&) Error: Could not write to file \"");
+                cc_tokenizer::String<char> message2 = cc_tokenizer::String<char>("\" for writing.");
+
+                fclose(fp);
+
+                throw ala_exception(message1 + fname + message2);
+            }
+
+            //std::cout<< "Pairs::write(cc_tokenizer::String<char>&) Success: Successfully wrote " << written_count << " pairs to file \"" << fname.c_str() << "\"." << std::endl;
+
+            written_count = fwrite(&(current_pair->centerWord), sizeof(cc_tokenizer::string_character_traits<char>::size_type), 1, fp);
+            if (written_count != 1)
+            {
+                cc_tokenizer::String<char> message1 = cc_tokenizer::String<char>("Pairs::write(cc_tokenizer::String<char>&) Error: Could not write to file \"");
+                cc_tokenizer::String<char> message2 = cc_tokenizer::String<char>("\" for writing.");
+
+                fclose(fp);
+
+                throw ala_exception(message1 + fname + message2);
+            }
+
+            //std::cout<< "Pairs::write(cc_tokenizer::String<char>&) Success: Successfully wrote " << written_count << " pairs to file \"" << fname.c_str() << "\"." << std::endl;
+
+            written_count = fwrite(current_pair->right->array, sizeof(cc_tokenizer::string_character_traits<char>::size_type), SKIP_GRAM_CONTEXT_WINDOW_SIZE, fp);
+            if (written_count != SKIP_GRAM_CONTEXT_WINDOW_SIZE/**sizeof(cc_tokenizer::string_character_traits<char>::size_type)*/)
+            {
+                cc_tokenizer::String<char> message1 = cc_tokenizer::String<char>("Pairs::write(cc_tokenizer::String<char>&) Error: Could not write to file \"");
+                cc_tokenizer::String<char> message2 = cc_tokenizer::String<char>("\" for writing.");
+
+                fclose(fp);
+
+                throw ala_exception(message1 + fname + message2);
+            }
+            
+            //std::cout<< "Pairs::write(cc_tokenizer::String<char>&) Success: Successfully wrote " << written_count << " pairs to file \"" << fname.c_str() << "\"." << std::endl;
+                                    
+            current_pair = current_pair->next;
+        }
+
+        fclose(fp);
+    }
+
+    /**
+     * @brief Deserializes word-context training pairs from a binary file previously written by write().
+     *
+     * This function reconstructs the complete linked list of WORDPAIRS nodes by reading the binary
+     * data saved by the write() method. It rebuilds the structure in memory exactly as it was
+     * during pair generation, including left/right context arrays and correct context counts (n).
+     *
+     * The file format is assumed to match the one produced by write():
+     *   - Fixed-size records of left contexts + center index + right contexts
+     *
+     * The number of pairs is computed from the file size to avoid storing an explicit count.
+     * After loading each pair, the function recounts valid (non-INDEX_NOT_FOUND_AT_VALUE)
+     * context entries and updates left->n and right->n accordingly.
+     *
+     * This enables extremely fast startup for repeated training runs — pair generation,
+     * which can be expensive due to redundant vocabulary lookups, is skipped entirely.
+     *
+     * @param fname The filename (as a custom String<char>) containing the serialized pairs.
+     *
+     * @throws ala_exception If the file cannot be opened, file size cannot be determined,
+     *                       any read operation fails (incomplete record), or memory allocation fails.
+     *
+     * @note The file is opened in "rb" mode (binary read). The existing list (if any) is
+     *       assumed to be empty; this method does not clear any prior content.
+     * @note Context counts (left->n and right->n) are recalculated after loading to ensure
+     *       correctness even if padding values (INDEX_NOT_FOUND_AT_VALUE) are present.
+     */
+    void read (cc_tokenizer::String<char>& fname) throw (ala_exception)
+    {
+        FILE* fp = fopen(fname.c_str(), "rb");
+        struct stat file_stat;
+        
+        size_t read_count;
+
+        if (fp == NULL)
+        {
+            cc_tokenizer::String<char> message1 = cc_tokenizer::String<char>("Pairs::read(cc_tokenizer::String<char>&) Error: Could not open file \"");
+            cc_tokenizer::String<char> message2 = cc_tokenizer::String<char>("\" for reading.");
+
+            throw ala_exception(message1 + fname + message2);
+        }
+        
+        if (fstat(fileno(fp), &file_stat) != 0)
+        {
+            cc_tokenizer::String<char> message1 = cc_tokenizer::String<char>("Pairs::read(cc_tokenizer::String<char>&) Error: Could not get file size of file \"");
+            cc_tokenizer::String<char> message2 = cc_tokenizer::String<char>("\" for reading.");
+
+            fclose(fp);
+
+            throw ala_exception(message1 + fname + message2);
+        }
+
+        size_t file_size = file_stat.st_size;
+
+        //std::cout<< "Pairs::read(cc_tokenizer::String<char>&) Success: Successfully read " << file_size << " pairs from file \"" << fname.c_str() << "\"." << std::endl;
+
+        cc_tokenizer::string_character_traits<char>::size_type number_of_pairs = file_size / ((SKIP_GRAM_CONTEXT_WINDOW_SIZE * sizeof(cc_tokenizer::string_character_traits<char>::size_type))*2 + sizeof(cc_tokenizer::string_character_traits<char>::size_type));
+
+        //std::cout<< "Pairs::read(cc_tokenizer::String<char>&) Success: Successfully read " << number_of_pairs << " pairs from file \"" << fname.c_str() << "\"." << std::endl;
+
+        for (cc_tokenizer::string_character_traits<char>::size_type i = 0; i < number_of_pairs; i++)
+        {
+            try
+            {
+                if (head == NULL)
+                {               
+                    head = reinterpret_cast<WORDPAIRS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(WORDPAIRS)));
+                    head->next = NULL;
+                    head->prev = NULL;
+                   
+                    // Later on find the surrounding context words
+                    head->left = reinterpret_cast<CONTEXTWORDS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(CONTEXTWORDS)));
+                    head->right = reinterpret_cast<CONTEXTWORDS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(CONTEXTWORDS)));
+                    
+                    tail = head;                           
+                }
+                else
+                {
+                    tail->next = reinterpret_cast<WORDPAIRS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(WORDPAIRS)));
+                    tail->next->next = NULL;
+                    tail->next->prev = tail;
+
+                    // Later on find the surrounding context words
+                    tail->next->left = reinterpret_cast<CONTEXTWORDS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(CONTEXTWORDS)));
+                    tail->next->right = reinterpret_cast<CONTEXTWORDS_PTR>(cc_tokenizer::allocator<char>().allocate(sizeof(CONTEXTWORDS)));                    
+
+                    tail = tail->next;
+                }
+
+                n = n + 1; // Increment number of word pair counter
+                
+                read_count = fread(tail->left->array, sizeof(cc_tokenizer::string_character_traits<char>::size_type), SKIP_GRAM_CONTEXT_WINDOW_SIZE, fp);
+
+                if (read_count != SKIP_GRAM_CONTEXT_WINDOW_SIZE)
+                {
+                    cc_tokenizer::String<char> message1 = cc_tokenizer::String<char>("Pairs::read(cc_tokenizer::String<char>&) Error: Could not read from file \"");
+                    cc_tokenizer::String<char> message2 = cc_tokenizer::String<char>("\" for reading.");
+
+                    fclose(fp);
+
+                    throw ala_exception(message1 + fname + message2);
+                }
+
+                read_count = fread(&(tail->centerWord), sizeof(cc_tokenizer::string_character_traits<char>::size_type), 1, fp);
+
+                if (read_count != 1)
+                {
+                    cc_tokenizer::String<char> message1 = cc_tokenizer::String<char>("Pairs::read(cc_tokenizer::String<char>&) Error: Could not read from file \"");
+                    cc_tokenizer::String<char> message2 = cc_tokenizer::String<char>("\" for reading.");
+
+                    fclose(fp);
+
+                    throw ala_exception(message1 + fname + message2);
+                }
+
+                read_count = fread(tail->right->array, sizeof(cc_tokenizer::string_character_traits<char>::size_type), SKIP_GRAM_CONTEXT_WINDOW_SIZE, fp);
+
+                if (read_count != SKIP_GRAM_CONTEXT_WINDOW_SIZE)
+                {
+                    cc_tokenizer::String<char> message1 = cc_tokenizer::String<char>("Pairs::read(cc_tokenizer::String<char>&) Error: Could not read from file \"");
+                    cc_tokenizer::String<char> message2 = cc_tokenizer::String<char>("\" for reading.");
+
+                    fclose(fp);
+
+                    throw ala_exception(message1 + fname + message2);
+                }
+
+                tail->left->n = 0;
+                tail->right->n = 0;
+
+                for (cc_tokenizer::string_character_traits<char>::size_type j = 0; j < SKIP_GRAM_CONTEXT_WINDOW_SIZE; j++)
+                {
+                    if (tail->left->array[j] != INDEX_NOT_FOUND_AT_VALUE)
+                    {
+                        tail->left->n++;
+                    }
+                        
+                    if (tail->right->array[j] != INDEX_NOT_FOUND_AT_VALUE)
+                    {
+                        tail->right->n++;
+                    }                         
+                }
+            }
+            catch (std::bad_alloc& e)
+            {
+                fclose(fp);
+
+                throw ala_exception(cc_tokenizer::String<char>("Pairs::read(cc_tokenizer::String<char>&) Error: ") + e.what()); 
+            }
+            catch(std::length_error& e)
+            {
+                fclose(fp);
+
+                throw ala_exception(cc_tokenizer::String<char>("Pairs::read(cc_tokenizer::String<char>&) Error: ") + e.what());
+            }                
+        }
+
+        fclose(fp);
     }
 
     void incrementReferenceCount(void) 
@@ -738,7 +990,7 @@ typedef struct Pairs
     }
 
     private:
-        WORDPAIRS_PTR head;
+        WORDPAIRS_PTR head, tail;
         WORDPAIRS_PTR current_pair;
 
         cc_tokenizer::string_character_traits<char>::size_type n;
